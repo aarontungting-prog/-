@@ -368,7 +368,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
         <div class="ad" id="ad1"></div>
       </div>
-      <div class="bw" id="b1-wrapper"><div class="board" id="b1"></div></div>
+      <div class="bw" id="b1-wrapper"></div>
     </div>
     
     <div class="vs-div"><div class="vs-txt">對決</div></div>
@@ -386,7 +386,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
         <div class="ad" id="ad2"></div>
       </div>
-      <div class="bw" id="b2-wrapper"><div class="board" id="b2"></div></div>
+      <div class="bw" id="b2-wrapper"></div>
     </div>
   </div>
   
@@ -409,9 +409,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 })();
 
 // ═══════════ FIREBASE INIT ═══════════
-var db = null;
+var fbOk = false, db = null;
 try {
-  // ✅ 重點修正：將你提供的新加坡伺服器網址直接套用至 Compat SDK 中
+  // ✅ 確保套用您的亞洲東南 (新加坡) 資料庫節點
   firebase.initializeApp({
     apiKey: "AIzaSyCnONA7vSsBwOcui-bVBmmZfD_TOVZmck0",
     authDomain: "airplane-game-68f8f.firebaseapp.com",
@@ -419,11 +419,20 @@ try {
     projectId: "airplane-game-68f8f",
     storageBucket: "airplane-game-68f8f.firebasestorage.app",
     messagingSenderId: "215248477446",
-    appId: "1:215248477446:web:f1d9dbb69b759118125287",
-    measurementId: "G-GKWZMFT66H"
+    appId: "1:215248477446:web:f1d9dbb69b759118125287"
   });
   db = firebase.database();
-  console.log('Firebase connected (Singapore Region)');
+  
+  // 監聽 Firebase 真實連線狀態
+  db.ref('.info/connected').on('value', function(snap) {
+    if (snap.val() === true) {
+      fbOk = true;
+      console.log('Firebase 連線成功 (Singapore)');
+    } else {
+      fbOk = false;
+      console.log('Firebase 斷開連線');
+    }
+  });
 } catch(e) {
   console.warn('Firebase failed:', e.message);
 }
@@ -457,7 +466,7 @@ function goHome(){
   }
   clearInterval(setupTimerInterval);
   
-  // 重置建立房間按鈕狀態 (防呆解除)
+  // 重置建立房間按鈕狀態
   var cb = document.getElementById('createBtn');
   if(cb) cb.style.display = 'block';
   var cn = document.getElementById('createName');
@@ -667,7 +676,7 @@ function createRoom(){
   if(!db){note('系統尚未連接至 Firebase 資料庫','e');return;}
   var name=document.getElementById('createName').value||'玩家一';
   
-  // UI 防呆機制：隱藏建立按鈕並鎖住名稱輸入
+  // UI 防呆機制
   document.getElementById('createBtn').style.display = 'none';
   document.getElementById('createName').disabled = true;
 
@@ -686,7 +695,7 @@ function createRoom(){
     listenRoom();
     note('房間建立成功！','s');
   }).catch(function(e) {
-    note('創建失敗，連線異常或權限不足: '+e.message, 'e', 5000);
+    note('創建失敗: '+e.message, 'e', 5000);
     goHome(); 
   });
 }
@@ -814,9 +823,8 @@ function callNum(n,caller){
   }
 }
 
-// ═══════════ RENDER ═══════════
+// ═══════════ RENDER (100% 重寫: 保留 onclick 事件) ═══════════
 function renderBoards(){
-  // ✅ 重點修正：傳遞 Wrapper ID 來避免佈局被覆蓋破壞
   renderBoard('b1-wrapper',G.myBoard,G.myMk,false);
   renderBoard('b2-wrapper',G.oppBoard,G.oppMk,true);
   
@@ -840,19 +848,27 @@ function renderBoard(id,board,mks,isOpp){
   if(!isOpp){G.myBingo=bcount;document.getElementById('bc1').textContent=bcount;}
   else{G.oppBingo=bcount;document.getElementById('bc2').textContent=bcount;}
 
+  // 清空外層 Wrapper，準備重新生成
+  wrapper.innerHTML = '';
+
   // 對手陣地保密遮罩 (唯有遊戲結束後才會顯示真實數字)
   if(isOpp && !G.over){
-    wrapper.innerHTML = '<div class="hidden-opp-board"><span style="font-size:32px;margin-bottom:8px;">🌸</span><br>敵方陣地保密中<br><span style="font-size:12px;opacity:0.6;margin-top:8px;">（遊戲結束後公開）</span></div>';
+    var hiddenDiv = document.createElement('div');
+    hiddenDiv.className = 'hidden-opp-board';
+    hiddenDiv.innerHTML = '<span style="font-size:32px;margin-bottom:8px;">🌸</span><br>敵方陣地保密中<br><span style="font-size:12px;opacity:0.6;margin-top:8px;">（遊戲結束後公開）</span>';
+    wrapper.appendChild(hiddenDiv);
     return;
   }
 
-  // ✅ 修正 HTML 結構，確保 grid class 不被雙重嵌套
-  var boardHtml = '<div class="board" id="' + (isOpp ? 'b2' : 'b1') + '">';
-  var tempDiv = document.createElement('div');
+  // ✅ 完美生成 DOM 結構，完全保留 JS 的點擊事件！
+  var boardDiv = document.createElement('div');
+  boardDiv.className = 'board';
+  boardDiv.id = isOpp ? 'b2' : 'b1';
   
   for(var i=0;i<25;i++){
     var n=board[i];
-    var c=document.createElement('div');c.className='cell';
+    var c=document.createElement('div');
+    c.className='cell';
     c.textContent = n;
 
     if(mks.indexOf(i)>=0){
@@ -861,9 +877,11 @@ function renderBoard(id,board,mks,isOpp){
     }
     if(bingoSet.has(i))c.classList.add('bl');
     
+    // 如果不是對手的盤面，並且遊戲沒結束，才加上 onclick
     if(!isOpp && !G.over){
-      (function(num){
-        c.onclick=function(){
+      // 閉包綁定變數
+      (function(num, cellDOM){
+        cellDOM.onclick=function(){
           if (G.mode === 'ai') {
             if(G.turn!=='p1')return;
             if(G.called.indexOf(num)>=0){note('已宣告過此數字','e');return;}
@@ -875,17 +893,19 @@ function renderBoard(id,board,mks,isOpp){
             onlineCall(num);
           }
         };
-      })(n);
+      })(n, c);
+
+      // 控制游標是否顯示「禁止點擊」
       var isMyTurn = G.mode === 'ai' ? (G.turn === 'p1') : ((G.role === 'p1' && G.turn === 'p1') || (G.role === 'p2' && G.turn === 'p2'));
       if(!isMyTurn) c.classList.add('dis');
+
     } else {
       c.classList.add('dis');
     }
-    tempDiv.appendChild(c);
+    boardDiv.appendChild(c);
   }
   
-  boardHtml += tempDiv.innerHTML + '</div>';
-  wrapper.innerHTML = boardHtml;
+  wrapper.appendChild(boardDiv);
 }
 
 // ═══════════ BINGO CHECK ═══════════
