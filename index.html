@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌸 雙人賓果 BINGO - 和風版 🌸</title>
+<title>🌸 雙人賓果 BINGO - 和風正規版 🌸</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -12,26 +12,26 @@
 <style>
 :root {
   /* 日系傳統色票 */
-  --sakura: #D05A6E;      /* 今樣色 (櫻紅) */
-  --sakura-light: #F4A7B9;/* 櫻色 */
-  --matcha: #86A697;      /* 青磁色 (抹茶綠) */
+  --sakura: #D05A6E;      
+  --sakura-light: #F4A7B9;
+  --matcha: #86A697;      
   --matcha-dark: #5C7A6B; 
-  --wood: #C7B39A;        /* 胡桃色 */
+  --wood: #C7B39A;        
   --wood-dark: #A58F74;
-  --bg: #FDFBF7;          /* 和紙白 */
+  --bg: #FDFBF7;          
   --panel: rgba(255, 255, 255, 0.95);
   --border: rgba(208, 90, 110, 0.25);
-  --text: #2C3E50;        /* 墨色 */
+  --text: #2C3E50;        
   --text-light: #7F8C8D;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
-/* ── SAKURA FALLING BACKGROUND (落櫻特效) ── */
+/* ── SAKURA FALLING BACKGROUND ── */
 #sakura-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
 .petal{
   position:absolute;background:linear-gradient(135deg, var(--sakura-light), #fff);
-  border-radius: 15px 0 15px 0; /* 花瓣形狀 */
+  border-radius: 15px 0 15px 0;
   box-shadow: 0 2px 4px rgba(208,90,110,0.2);
   animation: fall linear infinite;
 }
@@ -42,15 +42,11 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   100% { transform: translateY(110vh) translateX(20vw) rotate(720deg) scale(0.5); opacity: 0; }
 }
 
-/* ── GRID PATTERN (傳統和風底紋替代) ── */
+/* ── GRID PATTERN ── */
 .gridbg{
   position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image: 
-    radial-gradient(var(--wood) 1px, transparent 1px),
-    radial-gradient(var(--wood) 1px, transparent 1px);
-  background-size: 40px 40px;
-  background-position: 0 0, 20px 20px;
-  opacity: 0.15;
+  background-image: radial-gradient(var(--wood) 1px, transparent 1px), radial-gradient(var(--wood) 1px, transparent 1px);
+  background-size: 40px 40px;background-position: 0 0, 20px 20px;opacity: 0.15;
 }
 
 /* ── SCREENS ── */
@@ -61,9 +57,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .logo-wrap{text-align:center;margin-bottom:36px;}
 .logo-title{
   font-family:'Noto Serif TC',serif;font-size:clamp(40px,9vw,72px);font-weight:900;
-  color: var(--sakura);
-  letter-spacing:12px;
-  text-shadow: 2px 4px 12px rgba(208, 90, 110, 0.3);
+  color: var(--sakura);letter-spacing:12px;text-shadow: 2px 4px 12px rgba(208, 90, 110, 0.3);
 }
 .logo-sub{font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--matcha-dark);letter-spacing:6px;margin-top:8px;}
 
@@ -82,8 +76,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .btn{
   width:100%;padding:15px 22px;border:none;border-radius:8px;
   font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;
-  cursor:pointer;transition:all 0.2s ease;
-  position:relative;margin-bottom:12px;
+  cursor:pointer;transition:all 0.2s ease;position:relative;margin-bottom:12px;
 }
 .btn:active{transform:scale(0.97);}
 .btn-sakura{background:var(--sakura);color:#fff;box-shadow:0 4px 12px rgba(208, 90, 110, 0.3);}
@@ -104,6 +97,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .inp-wrap{margin-bottom:16px;}
 .inp{width:100%;padding:13px 17px;background:rgba(0,0,0,0.02);border:1px solid rgba(0,0,0,0.1);border-radius:8px;color:var(--text);font-size:15px;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s;outline:none;}
 .inp:focus{border-color:var(--sakura);box-shadow:0 0 0 3px rgba(208, 90, 110, 0.15);background:#fff;}
+.inp:disabled{opacity:0.6;cursor:not-allowed;}
 
 /* ── ROOM CODE ── */
 .rc-box{background:rgba(208,90,110,0.05);border:1px dashed var(--sakura);border-radius:8px;padding:22px;text-align:center;margin-bottom:18px;}
@@ -151,36 +145,46 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
 .ad{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:#e0e0e0;transition:all 0.3s;}
 .ad.on{background:var(--matcha);box-shadow:0 0 8px rgba(134,166,151,0.6);animation:pulse 1s infinite;}
 
-/* ── BOARD ── */
+/* ── BOARD & HIDDEN OPPONENT BOARD ── */
 .bw{width:100%;}
 .board{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.04);}
 .cell{
   aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
   font-family:'Noto Serif TC',serif;font-weight:900;font-size:clamp(16px,2.5vw,24px);
-  cursor:pointer;position:relative;overflow:hidden;user-select:none;
-  transition:all 0.2s;
-  background:#fafafa;
-  border:1px solid #eee;
-  color:var(--text);
+  cursor:pointer;position:relative;overflow:hidden;user-select:none;transition:all 0.2s;
+  background:#fafafa;border:1px solid #eee;color:var(--text);
 }
 .cell:hover:not(.dis):not(.mk){transform:translateY(-2px);border-color:var(--sakura-light);background:#fff;box-shadow:0 4px 12px rgba(208,90,110,0.1);}
-/* 印章特效 (圈圈) */
+/* 印章特效 */
 .cell.mk{background:#fff;cursor:default;}
 .cell.mk::after{
   content:'';position:absolute;width:75%;height:75%;
-  border:3px solid var(--sakura);border-radius:50%;
-  opacity:0.8;
+  border:3px solid var(--sakura);border-radius:50%;opacity:0.8;
   animation:stampIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.cell.mk.om::after{border-color:var(--wood-dark);} /* 對手印章顏色不同 */
+.cell.mk.om::after{border-color:var(--wood-dark);}
 @keyframes stampIn{0%{transform:scale(2);opacity:0;}100%{transform:scale(1);opacity:0.8;}}
-
-/* 連線高光 */
 .cell.bl{background:rgba(208, 90, 110, 0.1)!important;border-color:var(--sakura)!important;}
 .cell.dis{cursor:default;}
 
-/* 隱藏盤面的櫻花圖標大小調整 */
-.cell .hidden-icon { font-size: 1.2em; opacity: 0.6; }
+/* 完全保密的敵方陣地樣式 */
+.hidden-opp-board {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(208, 90, 110, 0.04);
+  border: 2px dashed rgba(208, 90, 110, 0.3);
+  border-radius: 12px;
+  color: var(--sakura);
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 900;
+  font-size: 18px;
+  text-align: center;
+  padding: 20px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.02);
+}
 
 /* ── VS ── */
 .vs-div{display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:60px;flex-shrink:0;}
@@ -289,7 +293,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
     <div class="inp-wrap">
       <input class="inp" id="createName" placeholder="輸入名稱" value="玩家一" maxlength="10">
     </div>
-    <button class="btn btn-sakura" onclick="createRoom()">⛩️ 建立房間</button>
+    <button class="btn btn-sakura" id="createBtn" onclick="createRoom()">⛩️ 建立房間</button>
     <div id="roomInfo" style="display:none">
       <div class="rc-box">
         <div class="rc-lbl">房間代碼</div>
@@ -364,7 +368,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
         <div class="ad" id="ad1"></div>
       </div>
-      <div class="bw"><div class="board" id="b1"></div></div>
+      <div class="bw" id="b1-wrapper"><div class="board" id="b1"></div></div>
     </div>
     
     <div class="vs-div"><div class="vs-txt">對決</div></div>
@@ -382,12 +386,12 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
         </div>
         <div class="ad" id="ad2"></div>
       </div>
-      <div class="bw"><div class="board" id="b2"></div></div>
+      <div class="bw" id="b2-wrapper"><div class="board" id="b2"></div></div>
     </div>
   </div>
   
   <div class="cp" id="callPanel" style="display:none">
-    <div class="cpt">請選擇要宣告的數字 (也可直接點擊上方盤面)</div>
+    <div class="cpt">請選擇要宣告的數字 (也可直接點擊上方己方盤面)</div>
     <div class="cpg" id="callGrid"></div>
   </div>
 </div>
@@ -398,27 +402,28 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text
   var c=document.getElementById('sakura-bg');
   for(var i=0;i<30;i++){
     var s=document.createElement('div');s.className='petal';
-    var sz = 8 + Math.random()*8; // 花瓣大小
+    var sz = 8 + Math.random()*8; 
     s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'vw;top:-20vh;animation-duration:'+(6+Math.random()*6)+'s;animation-delay:'+(Math.random()*10)+'s;';
     c.appendChild(s);
   }
 })();
 
 // ═══════════ FIREBASE INIT ═══════════
-var fbOk = false, db = null;
+var db = null;
 try {
+  // ✅ 重點修正：將你提供的新加坡伺服器網址直接套用至 Compat SDK 中
   firebase.initializeApp({
     apiKey: "AIzaSyCnONA7vSsBwOcui-bVBmmZfD_TOVZmck0",
     authDomain: "airplane-game-68f8f.firebaseapp.com",
-    databaseURL: "https://airplane-game-68f8f-default-rtdb.firebaseio.com",
+    databaseURL: "https://airplane-game-68f8f-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "airplane-game-68f8f",
     storageBucket: "airplane-game-68f8f.firebasestorage.app",
     messagingSenderId: "215248477446",
-    appId: "1:215248477446:web:f1d9dbb69b759118125287"
+    appId: "1:215248477446:web:f1d9dbb69b759118125287",
+    measurementId: "G-GKWZMFT66H"
   });
   db = firebase.database();
-  fbOk = true;
-  console.log('Firebase connected');
+  console.log('Firebase connected (Singapore Region)');
 } catch(e) {
   console.warn('Firebase failed:', e.message);
 }
@@ -447,10 +452,17 @@ function showS(id){
 }
 
 function goHome(){
-  if(G.roomListener && G.roomId){
+  if(G.roomListener && G.roomId && db){
     try{ db.ref('bingo/'+G.roomId).off('value',G.roomListener); }catch(e){}
   }
   clearInterval(setupTimerInterval);
+  
+  // 重置建立房間按鈕狀態 (防呆解除)
+  var cb = document.getElementById('createBtn');
+  if(cb) cb.style.display = 'block';
+  var cn = document.getElementById('createName');
+  if(cn) cn.disabled = false;
+  
   G=newState();
   document.getElementById('winOv').classList.remove('on');
   document.getElementById('roomInfo').style.display='none';
@@ -474,7 +486,7 @@ function setDiff(d,btn){
 
 // ═══════════ SETUP & TIMER ═══════════
 var setupTimerInterval = null;
-var setupTimeLeft = 180; // 3 分鐘
+var setupTimeLeft = 180; 
 
 function initSetup(){
   G.setup=[];
@@ -521,7 +533,6 @@ function updateTimerUI() {
   var m = Math.floor(setupTimeLeft / 60).toString().padStart(2, '0');
   var s = (setupTimeLeft % 60).toString().padStart(2, '0');
   el.textContent = "⏳ " + m + ":" + s;
-  
   if (setupTimeLeft <= 30) {
     el.style.color = "var(--sakura)";
   } else {
@@ -582,9 +593,12 @@ function confirmSetup(){
     G.oppBoard=shuffle(Array.from({length:25},function(_,i){return i+1;}));
     startGame();
   } else {
-    if(!fbOk){note('連線狀態異常','e');return;}
-    db.ref('bingo/'+G.roomId+'/'+G.role+'Board').set(G.myBoard);
-    showWaiting();
+    if(!db){note('資料庫尚未初始化，請重整頁面','e');return;}
+    db.ref('bingo/'+G.roomId+'/'+G.role+'Board').set(G.myBoard).then(function() {
+      showWaiting();
+    }).catch(function(e) {
+      note('資料寫入失敗: '+e.message, 'e', 5000);
+    });
   }
 }
 
@@ -650,42 +664,53 @@ function genCode(){
 }
 
 function createRoom(){
-  if(!fbOk){note('網路未連線','e');return;}
+  if(!db){note('系統尚未連接至 Firebase 資料庫','e');return;}
   var name=document.getElementById('createName').value||'玩家一';
+  
+  // UI 防呆機制：隱藏建立按鈕並鎖住名稱輸入
+  document.getElementById('createBtn').style.display = 'none';
+  document.getElementById('createName').disabled = true;
+
   G.myName=name;G.role='p1';G.mode='online';
   var code=genCode();G.roomCode=code;
   var roomRef=db.ref('bingo').push();
   G.roomId=roomRef.key;
+  
   db.ref('bingo/'+G.roomId).set({
     code:code,status:'waiting',p1Name:name,p1Board:null,p2Name:null,p2Board:null,
     called:[],turn:'p1',created:Date.now()
+  }).then(function() {
+    db.ref('bingo-codes/'+code).set(G.roomId);
+    document.getElementById('rcDisplay').textContent=code;
+    document.getElementById('roomInfo').style.display='block';
+    listenRoom();
+    note('房間建立成功！','s');
+  }).catch(function(e) {
+    note('創建失敗，連線異常或權限不足: '+e.message, 'e', 5000);
+    goHome(); 
   });
-  db.ref('bingo-codes/'+code).set(G.roomId);
-  document.getElementById('rcDisplay').textContent=code;
-  document.getElementById('roomInfo').style.display='block';
-  listenRoom();
-  note('房間建立成功！','s');
 }
 
 function joinRoom(){
-  if(!fbOk){note('網路未連線','e');return;}
+  if(!db){note('系統尚未連接至 Firebase 資料庫','e');return;}
   var name=document.getElementById('joinName').value||'玩家二';
   var code=document.getElementById('joinCode').value.trim().toUpperCase();
   if(code.length!==4){note('代碼格式錯誤','e');return;}
+  
   db.ref('bingo-codes/'+code).get().then(function(snap){
-    if(!snap.exists()){note('找不到該房間','e');return;}
+    if(!snap.exists()){note('找不到該房間代碼','e');return;}
     var rid=snap.val();
     db.ref('bingo/'+rid).get().then(function(rsnap){
       if(!rsnap.exists()){note('房間已解散','e');return;}
       var rd=rsnap.val();
-      if(rd.status!=='waiting'){note('遊戲已開始','e');return;}
+      if(rd.status!=='waiting'){note('該房間的遊戲已開始','e');return;}
       G.roomId=rid;G.roomCode=code;G.role='p2';G.mode='online';G.myName=name;
       db.ref('bingo/'+rid).update({p2Name:name,status:'setup'});
       listenRoom();
       showS('sSetup');initSetup();
       note('加入成功！請佈置陣地','s');
     });
-  }).catch(function(e){note('連線失敗: '+e.message,'e');});
+  }).catch(function(e){note('連線讀取失敗: '+e.message,'e');});
 }
 
 function listenRoom(){
@@ -743,11 +768,13 @@ function initCallGrid(){
 function onlineCall(n){
   if(G.over)return;
   var myTurn=(G.role==='p1'&&G.turn==='p1')||(G.role==='p2'&&G.turn==='p2');
-  if(!myTurn){note('現在是对手的回合！','e');return;}
+  if(!myTurn){note('現在是對手的回合！','e');return;}
   if(G.called.indexOf(n)>=0){note('這個數字已宣告過了','e');return;}
   var nc=G.called.slice();nc.push(n);
   var nt=G.turn==='p1'?'p2':'p1';
-  db.ref('bingo/'+G.roomId).update({called:nc,turn:nt});
+  db.ref('bingo/'+G.roomId).update({called:nc,turn:nt}).catch(function(e) {
+    note('宣告失敗: '+e.message, 'e');
+  });
 }
 
 // ═══════════ GAME START ═══════════
@@ -789,8 +816,10 @@ function callNum(n,caller){
 
 // ═══════════ RENDER ═══════════
 function renderBoards(){
-  renderBoard('b1',G.myBoard,G.myMk,false);
-  renderBoard('b2',G.oppBoard,G.oppMk,true);
+  // ✅ 重點修正：傳遞 Wrapper ID 來避免佈局被覆蓋破壞
+  renderBoard('b1-wrapper',G.myBoard,G.myMk,false);
+  renderBoard('b2-wrapper',G.oppBoard,G.oppMk,true);
+  
   if(G.mode==='online'){
     for(var n=1;n<=25;n++){
       var b=document.getElementById('cg'+n);
@@ -800,27 +829,35 @@ function renderBoards(){
 }
 
 function renderBoard(id,board,mks,isOpp){
-  var el=document.getElementById(id);
-  if(!board||board.length<25){el.innerHTML='';return;}
+  var wrapper=document.getElementById(id);
+  if(!board||board.length<25){wrapper.innerHTML='';return;}
+  
   var bingoSet=new Set();var bcount=0;
   LINES.forEach(function(ln){
     if(ln.every(function(i){return mks.indexOf(i)>=0;})){bcount++;ln.forEach(function(i){bingoSet.add(i);});}
   });
-  el.innerHTML='';
+  
+  if(!isOpp){G.myBingo=bcount;document.getElementById('bc1').textContent=bcount;}
+  else{G.oppBingo=bcount;document.getElementById('bc2').textContent=bcount;}
+
+  // 對手陣地保密遮罩 (唯有遊戲結束後才會顯示真實數字)
+  if(isOpp && !G.over){
+    wrapper.innerHTML = '<div class="hidden-opp-board"><span style="font-size:32px;margin-bottom:8px;">🌸</span><br>敵方陣地保密中<br><span style="font-size:12px;opacity:0.6;margin-top:8px;">（遊戲結束後公開）</span></div>';
+    return;
+  }
+
+  // ✅ 修正 HTML 結構，確保 grid class 不被雙重嵌套
+  var boardHtml = '<div class="board" id="' + (isOpp ? 'b2' : 'b1') + '">';
+  var tempDiv = document.createElement('div');
+  
   for(var i=0;i<25;i++){
     var n=board[i];
     var c=document.createElement('div');c.className='cell';
-    
-    // [邏輯更新] 如果是對手的盤面，且遊戲尚未結束，且該數字沒被喊中 -> 隱藏數字！
-    if(isOpp && !G.over && mks.indexOf(i) < 0){
-      c.innerHTML = '<span class="hidden-icon">🌸</span>';
-    } else {
-      c.textContent = n;
-    }
+    c.textContent = n;
 
     if(mks.indexOf(i)>=0){
       c.classList.add('mk');
-      if(isOpp)c.classList.add('om'); // 對手的印章不同色
+      if(isOpp)c.classList.add('om'); 
     }
     if(bingoSet.has(i))c.classList.add('bl');
     
@@ -839,16 +876,16 @@ function renderBoard(id,board,mks,isOpp){
           }
         };
       })(n);
-      
       var isMyTurn = G.mode === 'ai' ? (G.turn === 'p1') : ((G.role === 'p1' && G.turn === 'p1') || (G.role === 'p2' && G.turn === 'p2'));
       if(!isMyTurn) c.classList.add('dis');
     } else {
       c.classList.add('dis');
     }
-    el.appendChild(c);
+    tempDiv.appendChild(c);
   }
-  if(!isOpp){G.myBingo=bcount;document.getElementById('bc1').textContent=bcount;}
-  else{G.oppBingo=bcount;document.getElementById('bc2').textContent=bcount;}
+  
+  boardHtml += tempDiv.innerHTML + '</div>';
+  wrapper.innerHTML = boardHtml;
 }
 
 // ═══════════ BINGO CHECK ═══════════
@@ -856,7 +893,7 @@ function checkBingo(){
   var my=countB(G.myMk),op=countB(G.oppMk);
   if(my>=5||op>=5){
     G.over=true;
-    renderBoards(); // [更新] 遊戲結束時強制重新渲染，解除對手盤面的櫻花遮罩！
+    renderBoards(); // 遊戲結束強制重繪，解除對手保密遮罩
     showWin(my>=5&&op>=5?'draw':my>=5?'win':'lose');
     return;
   }
@@ -898,7 +935,6 @@ function showWin(r){
   document.getElementById('ad2').classList.remove('on');
   document.getElementById('callPanel').style.display='none';
   
-  // 在多人模式下不顯示再玩一局 (需要雙方重新建立/加入)，以免狀態不同步
   if(G.mode === 'online'){
     document.getElementById('rematchBtn').style.display = 'none';
   } else {
@@ -906,7 +942,6 @@ function showWin(r){
   }
 }
 
-// 隱藏 Win Overlay，檢視雙方盤面
 function viewBoard(){
   document.getElementById('winOv').classList.remove('on');
   note('可自由瀏覽雙方最後的佈局，點擊左上角即可退出。', 'i', 4000);
