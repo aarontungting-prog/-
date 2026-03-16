@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌸 雙人賓果 BINGO - 和風版 🌸</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  /* 日系傳統色票 */
+  --sakura: #D05A6E;      /* 今樣色 (櫻紅) */
+  --sakura-light: #F4A7B9;/* 櫻色 */
+  --matcha: #86A697;      /* 青磁色 (抹茶綠) */
+  --matcha-dark: #5C7A6B; 
+  --wood: #C7B39A;        /* 胡桃色 */
+  --wood-dark: #A58F74;
+  --bg: #FDFBF7;          /* 和紙白 */
+  --panel: rgba(255, 255, 255, 0.95);
+  --border: rgba(208, 90, 110, 0.25);
+  --text: #2C3E50;        /* 墨色 */
+  --text-light: #7F8C8D;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+/* ── SAKURA FALLING BACKGROUND (落櫻特效) ── */
+#sakura-bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.petal{
+  position:absolute;background:linear-gradient(135deg, var(--sakura-light), #fff);
+  border-radius: 15px 0 15px 0; /* 花瓣形狀 */
+  box-shadow: 0 2px 4px rgba(208,90,110,0.2);
+  animation: fall linear infinite;
+}
+@keyframes fall{
+  0% { transform: translateY(-10vh) translateX(0) rotate(0deg) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(110vh) translateX(20vw) rotate(720deg) scale(0.5); opacity: 0; }
+}
+
+/* ── GRID PATTERN (傳統和風底紋替代) ── */
+.gridbg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image: 
+    radial-gradient(var(--wood) 1px, transparent 1px),
+    radial-gradient(var(--wood) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  opacity: 0.15;
+}
+
+/* ── SCREENS ── */
+.screen{position:relative;z-index:10;min-height:100vh;display:none;align-items:center;justify-content:center;padding:20px 16px;}
+.screen.active{display:flex;flex-direction:column;}
+
+/* ── LOGO ── */
+.logo-wrap{text-align:center;margin-bottom:36px;}
+.logo-title{
+  font-family:'Noto Serif TC',serif;font-size:clamp(40px,9vw,72px);font-weight:900;
+  color: var(--sakura);
+  letter-spacing:12px;
+  text-shadow: 2px 4px 12px rgba(208, 90, 110, 0.3);
+}
+.logo-sub{font-family:'Noto Sans TC',sans-serif;font-size:14px;color:var(--matcha-dark);letter-spacing:6px;margin-top:8px;}
+
+/* ── CARD ── */
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:16px;
+  padding:34px 38px;backdrop-filter:blur(10px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(255,255,255,0.5);
+  position:relative;overflow:hidden;max-width:440px;width:100%;
+  animation:cardIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:none;}}
+.card-title{font-family:'Noto Serif TC',serif;font-size:18px;font-weight:700;color:var(--text);text-align:center;margin-bottom:24px;letter-spacing:3px;}
+
+/* ── BUTTONS ── */
+.btn{
+  width:100%;padding:15px 22px;border:none;border-radius:8px;
+  font-family:'Noto Sans TC',sans-serif;font-size:14px;font-weight:700;letter-spacing:2px;
+  cursor:pointer;transition:all 0.2s ease;
+  position:relative;margin-bottom:12px;
+}
+.btn:active{transform:scale(0.97);}
+.btn-sakura{background:var(--sakura);color:#fff;box-shadow:0 4px 12px rgba(208, 90, 110, 0.3);}
+.btn-sakura:hover{background:#C04A5E;transform:translateY(-2px);box-shadow:0 6px 16px rgba(208, 90, 110, 0.4);}
+.btn-matcha{background:var(--matcha);color:#fff;box-shadow:0 4px 12px rgba(134, 166, 151, 0.3);}
+.btn-matcha:hover{background:var(--matcha-dark);transform:translateY(-2px);box-shadow:0 6px 16px rgba(134, 166, 151, 0.4);}
+.btn-wood{background:var(--wood);color:#fff;box-shadow:0 4px 12px rgba(199, 179, 154, 0.4);}
+.btn-wood:hover{background:var(--wood-dark);transform:translateY(-2px);}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--wood);}
+.btn-outline:hover{background:rgba(199, 179, 154, 0.1);transform:translateY(-2px);}
+.mb0{margin-bottom:0;}
+
+/* ── DIVIDER ── */
+.div{display:flex;align-items:center;gap:11px;margin:18px 0;color:var(--text-light);font-size:12px;letter-spacing:2px;}
+.div::before,.div::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── INPUT ── */
+.inp-wrap{margin-bottom:16px;}
+.inp{width:100%;padding:13px 17px;background:rgba(0,0,0,0.02);border:1px solid rgba(0,0,0,0.1);border-radius:8px;color:var(--text);font-size:15px;font-family:'Noto Sans TC',sans-serif;transition:all 0.2s;outline:none;}
+.inp:focus{border-color:var(--sakura);box-shadow:0 0 0 3px rgba(208, 90, 110, 0.15);background:#fff;}
+
+/* ── ROOM CODE ── */
+.rc-box{background:rgba(208,90,110,0.05);border:1px dashed var(--sakura);border-radius:8px;padding:22px;text-align:center;margin-bottom:18px;}
+.rc-lbl{font-size:12px;color:var(--text-light);letter-spacing:3px;margin-bottom:7px;}
+.rc-val{font-family:'Noto Serif TC',serif;font-size:42px;font-weight:900;color:var(--sakura);letter-spacing:14px;}
+.rc-st{font-size:12px;color:var(--matcha-dark);margin-top:9px;letter-spacing:1px;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:0.6;}50%{opacity:1;}}
+
+/* ── BACK ── */
+.back-btn{position:fixed;top:18px;left:18px;z-index:50;background:var(--panel);border:1px solid rgba(0,0,0,0.1);color:var(--text);border-radius:8px;padding:10px 18px;font-size:12px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;display:none;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+.back-btn:hover{background:var(--bg);border-color:var(--sakura);color:var(--sakura);}
+.back-btn.vis{display:block;}
+
+/* ── NOTIFY ── */
+.notif{position:fixed;top:18px;right:18px;z-index:200;background:var(--panel);border-left:4px solid var(--border);border-radius:4px;padding:14px 20px;font-size:14px;font-weight:600;max-width:300px;transform:translateX(150%);transition:transform 0.4s cubic-bezier(0.2,0.8,0.2,1);box-shadow:0 8px 24px rgba(0,0,0,0.1);}
+.notif.show{transform:translateX(0);}
+.notif.s{border-color:var(--matcha);color:var(--matcha-dark);}
+.notif.e{border-color:var(--sakura);color:var(--sakura);}
+.notif.i{border-color:var(--wood-dark);color:var(--text);}
+
+/* ── WIN OVERLAY ── */
+.win-ov{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(253,251,247,0.85);backdrop-filter:blur(8px);}
+.win-ov.on{display:flex;}
+.win-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px 56px;text-align:center;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:winIn 0.5s cubic-bezier(0.2,0.8,0.2,1);}
+@keyframes winIn{from{transform:scale(0.8) translateY(30px);opacity:0;}to{transform:none;opacity:1;}}
+.win-emoji{font-size:64px;margin-bottom:16px;display:block;}
+.win-title{font-family:'Noto Serif TC',serif;font-size:32px;font-weight:900;color:var(--sakura);margin-bottom:8px;letter-spacing:4px;}
+.win-sub{font-size:15px;color:var(--text-light);margin-bottom:32px;}
+
+/* ── DIFFICULTY ── */
+.diff-btns{display:flex;gap:8px;margin-bottom:16px;}
+.diff-btn{flex:1;padding:10px;border-radius:6px;border:1px solid rgba(0,0,0,0.1);background:#fff;color:var(--text-light);cursor:pointer;font-size:13px;font-weight:700;transition:all 0.2s;}
+.diff-btn.on{border-color:var(--sakura);color:var(--sakura);background:rgba(208,90,110,0.05);}
+
+/* ── GAME ── */
+.game-wrap{display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;width:100%;max-width:1100px;}
+.pp{display:flex;flex-direction:column;align-items:center;gap:16px;flex:1;min-width:280px;max-width:420px;}
+.ph{display:flex;align-items:center;gap:12px;width:100%;background:var(--panel);border:1px solid rgba(0,0,0,0.05);border-radius:12px;padding:14px 20px;box-shadow:0 4px 12px rgba(0,0,0,0.03);}
+.av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(199, 179, 154, 0.2);color:var(--wood-dark);}
+.av.av-ai{background:rgba(208, 90, 110, 0.15);color:var(--sakura);}
+.av.av-p2{background:rgba(134, 166, 151, 0.2);color:var(--matcha-dark);}
+.pn-txt{font-weight:700;font-size:15px;letter-spacing:1px;color:var(--text);}
+.pb-n{margin-left:auto;font-family:'Noto Serif TC',serif;font-size:24px;font-weight:900;color:var(--sakura);}
+.pb-l{font-size:10px;color:var(--text-light);letter-spacing:2px;text-align:right;}
+.ad{width:10px;height:10px;border-radius:50%;flex-shrink:0;background:#e0e0e0;transition:all 0.3s;}
+.ad.on{background:var(--matcha);box-shadow:0 0 8px rgba(134,166,151,0.6);animation:pulse 1s infinite;}
+
+/* ── BOARD ── */
+.bw{width:100%;}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.06);border:1px solid rgba(0,0,0,0.04);}
+.cell{
+  aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:'Noto Serif TC',serif;font-weight:900;font-size:clamp(16px,2.5vw,24px);
+  cursor:pointer;position:relative;overflow:hidden;user-select:none;
+  transition:all 0.2s;
+  background:#fafafa;
+  border:1px solid #eee;
+  color:var(--text);
+}
+.cell:hover:not(.dis):not(.mk){transform:translateY(-2px);border-color:var(--sakura-light);background:#fff;box-shadow:0 4px 12px rgba(208,90,110,0.1);}
+/* 印章特效 (圈圈) */
+.cell.mk{background:#fff;cursor:default;}
+.cell.mk::after{
+  content:'';position:absolute;width:75%;height:75%;
+  border:3px solid var(--sakura);border-radius:50%;
+  opacity:0.8;
+  animation:stampIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.cell.mk.om::after{border-color:var(--wood-dark);} /* 對手印章顏色不同 */
+@keyframes stampIn{0%{transform:scale(2);opacity:0;}100%{transform:scale(1);opacity:0.8;}}
+
+/* 連線高光 */
+.cell.bl{background:rgba(208, 90, 110, 0.1)!important;border-color:var(--sakura)!important;}
+.cell.dis{cursor:default;}
+
+/* 隱藏盤面的櫻花圖標大小調整 */
+.cell .hidden-icon { font-size: 1.2em; opacity: 0.6; }
+
+/* ── VS ── */
+.vs-div{display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:60px;flex-shrink:0;}
+.vs-txt{font-family:'Noto Serif TC',serif;font-size:24px;font-weight:900;color:var(--wood-dark);letter-spacing:2px;}
+
+/* ── STATUS BAR ── */
+.sb{width:100%;max-width:1100px;background:var(--panel);border:1px solid rgba(0,0,0,0.05);border-radius:12px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:20px;box-shadow:0 4px 12px rgba(0,0,0,0.03);}
+.st{font-weight:700;font-size:14px;color:var(--sakura);letter-spacing:1px;}
+.tr{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-light);font-weight:600;}
+.td{width:10px;height:10px;border-radius:50%;background:var(--wood);animation:pulse 1s infinite;}
+
+/* ── CALL PANEL ── */
+.cp{background:var(--panel);border:1px solid rgba(0,0,0,0.05);border-radius:12px;padding:24px;width:100%;max-width:1100px;margin-top:20px;box-shadow:0 8px 24px rgba(0,0,0,0.05);}
+.cpt{font-size:13px;color:var(--text-light);letter-spacing:2px;text-align:center;margin-bottom:16px;font-weight:700;}
+.cpg{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;}
+.cn{aspect-ratio:1;border-radius:8px;border:1px solid #eee;background:#fafafa;color:var(--text);font-family:'Noto Serif TC',serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+.cn:hover:not(.used){background:#fff;border-color:var(--sakura);color:var(--sakura);transform:translateY(-2px);box-shadow:0 4px 8px rgba(208,90,110,0.15);}
+.cn.used{opacity:0.3;cursor:not-allowed;background:#eee;border-color:#ddd;}
+
+/* ── SETUP ── */
+.setup-board{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:16px 0;background:#fff;padding:10px;border-radius:12px;border:1px solid #eee;}
+.sc{aspect-ratio:1;border-radius:8px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;font-family:'Noto Serif TC',serif;font-size:18px;font-weight:900;color:#aaa;cursor:pointer;transition:all 0.2s;position:relative;background:#fafafa;}
+.sc.filled{border:1px solid var(--matcha);color:var(--matcha-dark);background:rgba(134, 166, 151, 0.05);}
+.sc.filled:hover::after{content:'✕';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(208, 90, 110, 0.9);border-radius:6px;color:#fff;font-size:14px;font-family:sans-serif;}
+.sc .ci{position:absolute;top:4px;left:6px;font-size:10px;opacity:0.4;font-family:sans-serif;}
+.pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px;}
+.pn{aspect-ratio:1;border-radius:8px;border:1px solid #eee;background:#fafafa;color:var(--text);font-family:'Noto Serif TC',serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;}
+.pn:hover:not(.used){background:#fff;border-color:var(--matcha);color:var(--matcha-dark);transform:translateY(-2px);box-shadow:0 4px 8px rgba(134,166,151,0.15);}
+.pn.used{opacity:0.3;cursor:not-allowed;}
+.pn.mine{color:#fff;border-color:var(--matcha-dark);background:var(--matcha);}
+
+/* ── MISC ── */
+.ldots span{display:inline-block;background:var(--sakura);width:8px;height:8px;border-radius:50%;margin:0 4px;animation:db 1.4s infinite;}
+.ldots span:nth-child(2){animation-delay:.2s;}.ldots span:nth-child(3){animation-delay:.4s;}
+@keyframes db{0%,80%,100%{transform:scale(0);}40%{transform:scale(1);}}
+.tsm{font-size:12px;color:var(--text-light);}
+.tc{text-align:center;}
+.mt8{margin-top:8px;}
+.mt16{margin-top:16px;}
+</style>
+
+</head>
+<body>
+
+<div id="sakura-bg"></div>
+<div class="gridbg"></div>
+
+<button class="back-btn" id="backBtn" onclick="goHome()">← 退出遊戲</button>
+
+<div class="notif" id="notif"></div>
+
+<div class="win-ov" id="winOv">
+  <div class="win-card">
+    <span class="win-emoji" id="winE">🎊</span>
+    <div class="win-title" id="winT">勝負已分</div>
+    <div class="win-sub" id="winS">恭喜獲勝！</div>
+    
+    <button class="btn btn-wood" onclick="viewBoard()">👁️ 查看對手盤面</button>
+    
+    <div class="div">或</div>
+    <button class="btn btn-sakura" onclick="goHome()">返回主畫面</button>
+    <button class="btn btn-outline mb0" onclick="rematch()" id="rematchBtn">再玩一局</button>
+  </div>
+</div>
+
+<div class="screen active" id="sHome">
+  <div class="logo-wrap">
+    <div class="logo-title">和風賓果</div>
+    <div class="logo-sub">🌸 雙人數字對戰 🌸</div>
+  </div>
+  <div class="card">
+    <div class="card-title">選擇遊戲模式</div>
+    <button class="btn btn-wood" onclick="showS('sAI')">🦊 &nbsp; 單人對戰 AI</button>
+    <div class="div">連線多人對戰</div>
+    <button class="btn btn-sakura" onclick="showS('sCreate')">⛩️ &nbsp; 創建房間</button>
+    <button class="btn btn-matcha mb0" onclick="showS('sJoin')">🏮 &nbsp; 加入房間</button>
+    <div class="tc mt16"><span class="tsm">5×5 盤面 · 先達成 5 條連線獲勝</span><br><span class="tsm" style="opacity:0.6;font-size:10px;">(按 Q 鍵可快速隨機填寫)</span></div>
+  </div>
+</div>
+
+<div class="screen" id="sAI">
+  <div class="logo-wrap" style="margin-bottom:20px">
+    <div class="logo-title" style="font-size:clamp(28px,6vw,48px)">單人對戰</div>
+  </div>
+  <div class="card">
+    <div class="card-title">難度選擇</div>
+    <div class="diff-btns">
+      <button class="diff-btn" onclick="setDiff('easy',this)">初級</button>
+      <button class="diff-btn on" onclick="setDiff('normal',this)">中級</button>
+      <button class="diff-btn" onclick="setDiff('hard',this)">上級</button>
+    </div>
+    <div class="card-title" style="margin-top:20px">玩家名稱</div>
+    <div class="inp-wrap">
+      <input class="inp" id="aiName" placeholder="輸入名稱" value="旅人" maxlength="10">
+    </div>
+    <button class="btn btn-wood mb0" onclick="startAISetup()">開始佈局 →</button>
+  </div>
+</div>
+
+<div class="screen" id="sCreate">
+  <div class="logo-wrap" style="margin-bottom:20px">
+    <div class="logo-title" style="font-size:clamp(28px,6vw,48px)">創建房間</div>
+  </div>
+  <div class="card">
+    <div class="card-title">玩家名稱</div>
+    <div class="inp-wrap">
+      <input class="inp" id="createName" placeholder="輸入名稱" value="玩家一" maxlength="10">
+    </div>
+    <button class="btn btn-sakura" onclick="createRoom()">⛩️ 建立房間</button>
+    <div id="roomInfo" style="display:none">
+      <div class="rc-box">
+        <div class="rc-lbl">房間代碼</div>
+        <div class="rc-val" id="rcDisplay">----</div>
+        <div class="rc-st" id="rcStatus">⏳ 等待對手加入...</div>
+      </div>
+      <button class="btn btn-outline mb0" onclick="copyCode()">📋 複製代碼</button>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="sJoin">
+  <div class="logo-wrap" style="margin-bottom:20px">
+    <div class="logo-title" style="font-size:clamp(28px,6vw,48px)">加入房間</div>
+  </div>
+  <div class="card">
+    <div class="card-title">玩家名稱</div>
+    <div class="inp-wrap">
+      <input class="inp" id="joinName" placeholder="輸入名稱" value="玩家二" maxlength="10">
+    </div>
+    <div class="card-title" style="margin-top:10px">房間代碼</div>
+    <div class="inp-wrap">
+      <input class="inp" id="joinCode" placeholder="輸入4位英文數字" maxlength="4"
+        style="text-align:center;font-family:'Noto Serif TC',serif;font-weight:900;font-size:24px;letter-spacing:8px;"
+        oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <button class="btn btn-matcha mb0" onclick="joinRoom()">🏮 確認加入</button>
+  </div>
+</div>
+
+<div class="screen" id="sSetup">
+  <div style="width:100%;max-width:500px">
+    <div class="logo-wrap" style="margin-bottom:14px">
+      <div class="logo-title" style="font-size:clamp(22px,5vw,36px)">佈局準備</div>
+      <div class="logo-sub" style="font-size:12px">從 1–25 選擇數字填滿盤面</div>
+      <div id="setupTimerDisplay" style="margin-top:12px; font-family:'Noto Serif TC', serif; font-size: 24px; font-weight: 900; color: var(--sakura);">⏳ 03:00</div>
+    </div>
+    <div class="card" style="max-width:100%">
+      <div class="setup-board" id="setupBoard"></div>
+      <div class="tsm tc mt8" id="setupProg">已佈置 0 / 25</div>
+      <div class="mt16">
+        <button class="btn btn-wood mb0" id="confirmBtn" onclick="confirmSetup()" disabled style="opacity:0.4">完成佈局 →</button>
+      </div>
+    </div>
+    <div class="card" style="max-width:100%;margin-top:16px">
+      <div class="cpt">點選下方數字填入盤面</div>
+      <div class="pg" id="pickGrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="screen" id="sGame" style="padding:16px;gap:12px">
+  <div class="sb">
+    <div class="st" id="statusTxt">遊戲進行中</div>
+    <div class="tr">
+      <div class="td"></div>
+      <span id="turnTxt">等待...</span>
+    </div>
+  </div>
+  
+  <div class="game-wrap">
+    <div class="pp">
+      <div class="ph">
+        <div class="av" id="av1">👤</div>
+        <div>
+          <div class="pn-txt" id="n1">玩家一</div>
+          <div class="tsm">己方陣地</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="pb-n" id="bc1">0</div>
+          <div class="pb-l">BINGO</div>
+        </div>
+        <div class="ad" id="ad1"></div>
+      </div>
+      <div class="bw"><div class="board" id="b1"></div></div>
+    </div>
+    
+    <div class="vs-div"><div class="vs-txt">對決</div></div>
+    
+    <div class="pp">
+      <div class="ph">
+        <div class="av av-p2" id="av2">👤</div>
+        <div>
+          <div class="pn-txt" id="n2">對手</div>
+          <div class="tsm" id="p2role">敵方陣地</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div class="pb-n" id="bc2">0</div>
+          <div class="pb-l">BINGO</div>
+        </div>
+        <div class="ad" id="ad2"></div>
+      </div>
+      <div class="bw"><div class="board" id="b2"></div></div>
+    </div>
+  </div>
+  
+  <div class="cp" id="callPanel" style="display:none">
+    <div class="cpt">請選擇要宣告的數字 (也可直接點擊上方盤面)</div>
+    <div class="cpg" id="callGrid"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════ SAKURA PETALS BACKGROUND ═══════════
+(function(){
+  var c=document.getElementById('sakura-bg');
+  for(var i=0;i<30;i++){
+    var s=document.createElement('div');s.className='petal';
+    var sz = 8 + Math.random()*8; // 花瓣大小
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'vw;top:-20vh;animation-duration:'+(6+Math.random()*6)+'s;animation-delay:'+(Math.random()*10)+'s;';
+    c.appendChild(s);
+  }
+})();
+
+// ═══════════ FIREBASE INIT ═══════════
+var fbOk = false, db = null;
+try {
+  firebase.initializeApp({
+    apiKey: "AIzaSyCnONA7vSsBwOcui-bVBmmZfD_TOVZmck0",
+    authDomain: "airplane-game-68f8f.firebaseapp.com",
+    databaseURL: "https://airplane-game-68f8f-default-rtdb.firebaseio.com",
+    projectId: "airplane-game-68f8f",
+    storageBucket: "airplane-game-68f8f.firebasestorage.app",
+    messagingSenderId: "215248477446",
+    appId: "1:215248477446:web:f1d9dbb69b759118125287"
+  });
+  db = firebase.database();
+  fbOk = true;
+  console.log('Firebase connected');
+} catch(e) {
+  console.warn('Firebase failed:', e.message);
+}
+
+// ═══════════ STATE ═══════════
+var G = newState();
+function newState(){
+  return {mode:null,role:null,roomId:null,roomCode:null,myName:'',aiDiff:'normal',
+    myBoard:[],oppBoard:[],called:[],myMk:[],oppMk:[],myBingo:0,oppBingo:0,
+    turn:'p1',setup:[],over:false,roomListener:null};
+}
+
+// 12 bingo lines
+var LINES = [];
+(function(){
+  for(var r=0;r<5;r++){var l=[];for(var c=0;c<5;c++)l.push(r*5+c);LINES.push(l);}
+  for(var c=0;c<5;c++){var l=[];for(var r=0;r<5;r++)l.push(r*5+c);LINES.push(l);}
+  LINES.push([0,6,12,18,24]);LINES.push([4,8,12,16,20]);
+})();
+
+// ═══════════ SCREEN ═══════════
+function showS(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  document.getElementById('backBtn').classList.toggle('vis',id!=='sHome');
+}
+
+function goHome(){
+  if(G.roomListener && G.roomId){
+    try{ db.ref('bingo/'+G.roomId).off('value',G.roomListener); }catch(e){}
+  }
+  clearInterval(setupTimerInterval);
+  G=newState();
+  document.getElementById('winOv').classList.remove('on');
+  document.getElementById('roomInfo').style.display='none';
+  showS('sHome');
+}
+
+// ═══════════ NOTIFY ═══════════
+function note(msg,type,dur){
+  type=type||'i';dur=dur||3000;
+  var el=document.getElementById('notif');
+  el.textContent=msg;el.className='notif '+type+' show';
+  clearTimeout(el._t);el._t=setTimeout(function(){el.classList.remove('show');},dur);
+}
+
+// ═══════════ DIFFICULTY ═══════════
+function setDiff(d,btn){
+  G.aiDiff=d;
+  document.querySelectorAll('.diff-btn').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');
+}
+
+// ═══════════ SETUP & TIMER ═══════════
+var setupTimerInterval = null;
+var setupTimeLeft = 180; // 3 分鐘
+
+function initSetup(){
+  G.setup=[];
+  var board=document.getElementById('setupBoard');
+  board.innerHTML='';
+  for(var i=0;i<25;i++){
+    var c=document.createElement('div');c.className='sc';c.id='sc'+i;
+    c.innerHTML='<span class="ci">'+(i+1)+'</span>';
+    (function(idx){c.onclick=function(){removeSetup(idx);};})(i);
+    board.appendChild(c);
+  }
+  var pg=document.getElementById('pickGrid');pg.innerHTML='';
+  for(var n=1;n<=25;n++){
+    var b=document.createElement('div');b.className='pn';b.textContent=n;b.id='pn'+n;
+    (function(num,btn){btn.onclick=function(){addSetup(num,btn);};})(n,b);
+    pg.appendChild(b);
+  }
+  updProg();
+  document.getElementById('confirmBtn').style.display='';
+  document.getElementById('confirmBtn').style.opacity='0.4';
+  document.getElementById('confirmBtn').disabled=true;
+  
+  startSetupTimer();
+}
+
+function startSetupTimer() {
+  clearInterval(setupTimerInterval);
+  setupTimeLeft = 180; 
+  updateTimerUI();
+  setupTimerInterval = setInterval(function() {
+    setupTimeLeft--;
+    updateTimerUI();
+    if (setupTimeLeft <= 0) {
+      clearInterval(setupTimerInterval);
+      autoFillBoard();
+      setTimeout(confirmSetup, 500); 
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  var el = document.getElementById('setupTimerDisplay');
+  if (!el) return;
+  var m = Math.floor(setupTimeLeft / 60).toString().padStart(2, '0');
+  var s = (setupTimeLeft % 60).toString().padStart(2, '0');
+  el.textContent = "⏳ " + m + ":" + s;
+  
+  if (setupTimeLeft <= 30) {
+    el.style.color = "var(--sakura)";
+  } else {
+    el.style.color = "var(--wood-dark)";
+  }
+}
+
+function autoFillBoard() {
+  if(G.setup.length >= 25) return;
+  var rem = [];
+  for(var n=1; n<=25; n++) if(G.setup.indexOf(n) < 0) rem.push(n);
+  shuffle(rem);
+  for(var i=0; i<rem.length; i++){
+    var b = document.getElementById('pn'+rem[i]);
+    if(b && !b.classList.contains('used')) addSetup(rem[i], b);
+    if(G.setup.length >= 25) break;
+  }
+  note('已自動為您佈局', 'i');
+}
+
+function addSetup(n,btn){
+  if(G.setup.length>=25||G.setup.indexOf(n)>=0)return;
+  var idx=G.setup.length;
+  G.setup.push(n);
+  btn.classList.add('used','mine');
+  var c=document.getElementById('sc'+idx);
+  c.textContent=n;c.classList.add('filled');
+  updProg();
+}
+
+function removeSetup(idx){
+  if(idx>=G.setup.length)return;
+  var n=G.setup[idx];
+  G.setup.splice(idx,1);
+  var b=document.getElementById('pn'+n);
+  if(b){b.classList.remove('used','mine');}
+  for(var i=0;i<25;i++){
+    var c=document.getElementById('sc'+i);
+    if(i<G.setup.length){c.textContent=G.setup[i];c.classList.add('filled');}
+    else{c.innerHTML='<span class="ci">'+(i+1)+'</span>';c.classList.remove('filled');}
+  }
+  updProg();
+}
+
+function updProg(){
+  var n=G.setup.length;
+  document.getElementById('setupProg').textContent='已佈置 '+n+' / 25';
+  var btn=document.getElementById('confirmBtn');
+  btn.disabled=n<25;btn.style.opacity=n<25?'0.4':'1';
+}
+
+function confirmSetup(){
+  if(G.setup.length<25){note('請填滿25個格子','e');return;}
+  clearInterval(setupTimerInterval);
+  
+  G.myBoard=G.setup.slice();
+  if(G.mode==='ai'){
+    G.oppBoard=shuffle(Array.from({length:25},function(_,i){return i+1;}));
+    startGame();
+  } else {
+    if(!fbOk){note('連線狀態異常','e');return;}
+    db.ref('bingo/'+G.roomId+'/'+G.role+'Board').set(G.myBoard);
+    showWaiting();
+  }
+}
+
+function showWaiting(){
+  document.getElementById('setupBoard').innerHTML='<div style="padding:40px;text-align:center"><div class="ldots"><span></span><span></span><span></span></div><div style="margin-top:16px;color:var(--text-light);font-size:14px;font-weight:700">等待對手佈局中...</div></div>';
+  document.getElementById('pickGrid').innerHTML='';
+  document.getElementById('confirmBtn').style.display='none';
+  document.getElementById('setupProg').textContent='';
+  document.getElementById('setupTimerDisplay').textContent=''; 
+}
+
+// ═══════════ AI LOGIC ═══════════
+function startAISetup(){
+  G.mode='ai';G.role='p1';
+  G.myName=document.getElementById('aiName').value||'旅人';
+  G.turn='p1';
+  showS('sSetup');initSetup();
+}
+
+function aiPick(){
+  var rem=[];
+  for(var n=1;n<=25;n++)if(G.called.indexOf(n)<0)rem.push(n);
+  if(!rem.length)return;
+  var chosen;
+  if(G.aiDiff==='easy'){
+    chosen=rem[Math.floor(Math.random()*rem.length)];
+  } else if(G.aiDiff==='normal'){
+    chosen=Math.random()<0.6?smartPick(rem):rem[Math.floor(Math.random()*rem.length)];
+  } else {
+    chosen=smartPick(rem);
+  }
+  setTimeout(function(){callNum(chosen,'p2');},900+Math.random()*600);
+}
+
+function smartPick(rem){
+  var best=null,bs=-99;
+  for(var i=0;i<rem.length;i++){
+    var n=rem[i],sc=0;
+    var ai=G.oppBoard.indexOf(n);
+    if(ai>=0){sc+=2;sc+=lineBonus(ai,G.oppMk)*3;}
+    var pl=G.myBoard.indexOf(n);
+    if(pl>=0)sc+=lineBonus(pl,G.myMk)*1.5;
+    if(sc>bs){bs=sc;best=n;}
+  }
+  return best||rem[0];
+}
+
+function lineBonus(idx,mks){
+  var b=0;
+  for(var i=0;i<LINES.length;i++){
+    var ln=LINES[i];
+    if(ln.indexOf(idx)<0)continue;
+    var f=ln.filter(function(x){return mks.indexOf(x)>=0;}).length;
+    if(f>=3)b+=f-2;
+  }
+  return b;
+}
+
+// ═══════════ ONLINE LOGIC ═══════════
+function genCode(){
+  var ch='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4},function(){return ch[Math.floor(Math.random()*ch.length)];}).join('');
+}
+
+function createRoom(){
+  if(!fbOk){note('網路未連線','e');return;}
+  var name=document.getElementById('createName').value||'玩家一';
+  G.myName=name;G.role='p1';G.mode='online';
+  var code=genCode();G.roomCode=code;
+  var roomRef=db.ref('bingo').push();
+  G.roomId=roomRef.key;
+  db.ref('bingo/'+G.roomId).set({
+    code:code,status:'waiting',p1Name:name,p1Board:null,p2Name:null,p2Board:null,
+    called:[],turn:'p1',created:Date.now()
+  });
+  db.ref('bingo-codes/'+code).set(G.roomId);
+  document.getElementById('rcDisplay').textContent=code;
+  document.getElementById('roomInfo').style.display='block';
+  listenRoom();
+  note('房間建立成功！','s');
+}
+
+function joinRoom(){
+  if(!fbOk){note('網路未連線','e');return;}
+  var name=document.getElementById('joinName').value||'玩家二';
+  var code=document.getElementById('joinCode').value.trim().toUpperCase();
+  if(code.length!==4){note('代碼格式錯誤','e');return;}
+  db.ref('bingo-codes/'+code).get().then(function(snap){
+    if(!snap.exists()){note('找不到該房間','e');return;}
+    var rid=snap.val();
+    db.ref('bingo/'+rid).get().then(function(rsnap){
+      if(!rsnap.exists()){note('房間已解散','e');return;}
+      var rd=rsnap.val();
+      if(rd.status!=='waiting'){note('遊戲已開始','e');return;}
+      G.roomId=rid;G.roomCode=code;G.role='p2';G.mode='online';G.myName=name;
+      db.ref('bingo/'+rid).update({p2Name:name,status:'setup'});
+      listenRoom();
+      showS('sSetup');initSetup();
+      note('加入成功！請佈置陣地','s');
+    });
+  }).catch(function(e){note('連線失敗: '+e.message,'e');});
+}
+
+function listenRoom(){
+  var ref=db.ref('bingo/'+G.roomId);
+  G.roomListener=ref.on('value',function(snap){
+    if(!snap.exists())return;
+    handleRoomUpdate(snap.val());
+  });
+}
+
+function handleRoomUpdate(d){
+  var isP1=G.role==='p1';
+  if(d.status==='setup'&&isP1&&!document.getElementById('sSetup').classList.contains('active')){
+    document.getElementById('rcStatus').textContent='✓ 對手已進入！';
+    note((d.p2Name||'玩家二')+' 加入了！','s');
+    setTimeout(function(){showS('sSetup');initSetup();},1000);
+  }
+  
+  if(d.p1Board&&d.p2Board&&d.status!=='playing'){
+    if(isP1) db.ref('bingo/'+G.roomId).update({status:'playing'});
+  }
+  
+  if(d.status==='playing'||(d.p1Board&&d.p2Board)){
+    G.myBoard=isP1?(d.p1Board||[]):(d.p2Board||[]);
+    G.oppBoard=isP1?(d.p2Board||[]):(d.p1Board||[]);
+    G.called=d.called||[];
+    G.turn=d.turn||'p1';
+    G.myMk=[];G.oppMk=[];
+    G.called.forEach(function(n){
+      var mi=G.myBoard.indexOf(n);var oi=G.oppBoard.indexOf(n);
+      if(mi>=0)G.myMk.push(mi);if(oi>=0)G.oppMk.push(oi);
+    });
+    document.getElementById('n1').textContent=isP1?(d.p1Name||'玩家一'):(d.p2Name||'玩家二');
+    document.getElementById('n2').textContent=isP1?(d.p2Name||'玩家二'):(d.p1Name||'玩家一');
+    
+    if(!document.getElementById('sGame').classList.contains('active')){
+      startGame();
+    } else {
+      renderBoards();
+      checkBingo(); 
+      updUI();
+    }
+  }
+}
+
+function initCallGrid(){
+  var g=document.getElementById('callGrid');g.innerHTML='';
+  for(var n=1;n<=25;n++){
+    var b=document.createElement('div');b.className='cn';b.textContent=n;b.id='cg'+n;
+    (function(num){b.onclick=function(){onlineCall(num);};})(n);
+    g.appendChild(b);
+  }
+}
+
+function onlineCall(n){
+  if(G.over)return;
+  var myTurn=(G.role==='p1'&&G.turn==='p1')||(G.role==='p2'&&G.turn==='p2');
+  if(!myTurn){note('現在是对手的回合！','e');return;}
+  if(G.called.indexOf(n)>=0){note('這個數字已宣告過了','e');return;}
+  var nc=G.called.slice();nc.push(n);
+  var nt=G.turn==='p1'?'p2':'p1';
+  db.ref('bingo/'+G.roomId).update({called:nc,turn:nt});
+}
+
+// ═══════════ GAME START ═══════════
+function startGame(){
+  G.over=false;
+  var isAI=G.mode==='ai';
+  document.getElementById('n1').textContent=G.myName;
+  if(isAI){
+    var diffs={easy:'初級',normal:'中級',hard:'上級'};
+    document.getElementById('n2').textContent='狐狸 AI ('+diffs[G.aiDiff]+')';
+    document.getElementById('p2role').textContent='電腦對手';
+    document.getElementById('av2').textContent='🦊';
+    document.getElementById('av2').className='av av-ai';
+  } else {
+    document.getElementById('p2role').textContent='連線對手';
+    document.getElementById('av2').textContent='👤';
+    document.getElementById('av2').className='av av-p2';
+  }
+  showS('sGame');
+  document.getElementById('callPanel').style.display=isAI?'none':'block';
+  if(!isAI)initCallGrid();
+  renderBoards();updUI();
+  if(isAI&&G.turn==='p2')aiPick();
+}
+
+// ═══════════ CALL NUM (AI) ═══════════
+function callNum(n,caller){
+  if(G.over||G.called.indexOf(n)>=0)return;
+  G.called.push(n);
+  var mi=G.myBoard.indexOf(n);var oi=G.oppBoard.indexOf(n);
+  if(mi>=0)G.myMk.push(mi);if(oi>=0)G.oppMk.push(oi);
+  renderBoards();checkBingo();
+  if(!G.over){
+    G.turn=caller==='p1'?'p2':'p1';
+    updUI();
+    if(G.mode==='ai'&&G.turn==='p2')aiPick();
+  }
+}
+
+// ═══════════ RENDER ═══════════
+function renderBoards(){
+  renderBoard('b1',G.myBoard,G.myMk,false);
+  renderBoard('b2',G.oppBoard,G.oppMk,true);
+  if(G.mode==='online'){
+    for(var n=1;n<=25;n++){
+      var b=document.getElementById('cg'+n);
+      if(b)b.classList.toggle('used',G.called.indexOf(n)>=0);
+    }
+  }
+}
+
+function renderBoard(id,board,mks,isOpp){
+  var el=document.getElementById(id);
+  if(!board||board.length<25){el.innerHTML='';return;}
+  var bingoSet=new Set();var bcount=0;
+  LINES.forEach(function(ln){
+    if(ln.every(function(i){return mks.indexOf(i)>=0;})){bcount++;ln.forEach(function(i){bingoSet.add(i);});}
+  });
+  el.innerHTML='';
+  for(var i=0;i<25;i++){
+    var n=board[i];
+    var c=document.createElement('div');c.className='cell';
+    
+    // [邏輯更新] 如果是對手的盤面，且遊戲尚未結束，且該數字沒被喊中 -> 隱藏數字！
+    if(isOpp && !G.over && mks.indexOf(i) < 0){
+      c.innerHTML = '<span class="hidden-icon">🌸</span>';
+    } else {
+      c.textContent = n;
+    }
+
+    if(mks.indexOf(i)>=0){
+      c.classList.add('mk');
+      if(isOpp)c.classList.add('om'); // 對手的印章不同色
+    }
+    if(bingoSet.has(i))c.classList.add('bl');
+    
+    if(!isOpp && !G.over){
+      (function(num){
+        c.onclick=function(){
+          if (G.mode === 'ai') {
+            if(G.turn!=='p1')return;
+            if(G.called.indexOf(num)>=0){note('已宣告過此數字','e');return;}
+            callNum(num,'p1');
+          } else if (G.mode === 'online') {
+            var myTurn = (G.role === 'p1' && G.turn === 'p1') || (G.role === 'p2' && G.turn === 'p2');
+            if(!myTurn){note('尚未輪到你的回合！','e');return;}
+            if(G.called.indexOf(num)>=0){note('已宣告過此數字','e');return;}
+            onlineCall(num);
+          }
+        };
+      })(n);
+      
+      var isMyTurn = G.mode === 'ai' ? (G.turn === 'p1') : ((G.role === 'p1' && G.turn === 'p1') || (G.role === 'p2' && G.turn === 'p2'));
+      if(!isMyTurn) c.classList.add('dis');
+    } else {
+      c.classList.add('dis');
+    }
+    el.appendChild(c);
+  }
+  if(!isOpp){G.myBingo=bcount;document.getElementById('bc1').textContent=bcount;}
+  else{G.oppBingo=bcount;document.getElementById('bc2').textContent=bcount;}
+}
+
+// ═══════════ BINGO CHECK ═══════════
+function checkBingo(){
+  var my=countB(G.myMk),op=countB(G.oppMk);
+  if(my>=5||op>=5){
+    G.over=true;
+    renderBoards(); // [更新] 遊戲結束時強制重新渲染，解除對手盤面的櫻花遮罩！
+    showWin(my>=5&&op>=5?'draw':my>=5?'win':'lose');
+    return;
+  }
+}
+
+function countB(mks){
+  var c=0;
+  LINES.forEach(function(ln){if(ln.every(function(i){return mks.indexOf(i)>=0;}))c++;});
+  return c;
+}
+
+// ═══════════ UI ═══════════
+function updUI(){
+  if(G.over) return;
+  var isAI=G.mode==='ai';
+  var myTurn=isAI?(G.turn==='p1'):((G.role==='p1'&&G.turn==='p1')||(G.role==='p2'&&G.turn==='p2'));
+  document.getElementById('ad1').classList.toggle('on',(isAI&&G.turn==='p1')||(!isAI&&G.turn==='p1'));
+  document.getElementById('ad2').classList.toggle('on',(isAI&&G.turn==='p2')||(!isAI&&G.turn==='p2'));
+  if(isAI){
+    document.getElementById('statusTxt').textContent=G.turn==='p1'?'你的回合 — 請宣告數字！':'狐狸正在思考...';
+    document.getElementById('turnTxt').textContent=G.turn==='p1'?'己方回合':'敵方回合';
+  } else {
+    document.getElementById('statusTxt').textContent=myTurn?'你的回合 — 請宣告數字！':'等待對手出招...';
+    document.getElementById('turnTxt').textContent=myTurn?'己方回合':'敵方回合';
+    document.getElementById('callPanel').style.display=myTurn?'block':'none';
+  }
+}
+
+// ═══════════ WIN & POST-GAME ═══════════
+function showWin(r){
+  var e=document.getElementById('winE'),t=document.getElementById('winT'),s=document.getElementById('winS');
+  if(r==='win'){e.textContent='🌸';t.textContent='大獲全勝';s.textContent='恭喜拿下勝利！';}
+  else if(r==='lose'){e.textContent='🍂';t.textContent='惜敗';s.textContent='再接再厲，下次定能取勝！';}
+  else{e.textContent='🍵';t.textContent='平局';s.textContent='勢均力敵，未分勝負！';}
+  document.getElementById('winOv').classList.add('on');
+  document.getElementById('statusTxt').textContent='遊戲結束';
+  document.getElementById('turnTxt').textContent='';
+  document.getElementById('ad1').classList.remove('on');
+  document.getElementById('ad2').classList.remove('on');
+  document.getElementById('callPanel').style.display='none';
+  
+  // 在多人模式下不顯示再玩一局 (需要雙方重新建立/加入)，以免狀態不同步
+  if(G.mode === 'online'){
+    document.getElementById('rematchBtn').style.display = 'none';
+  } else {
+    document.getElementById('rematchBtn').style.display = 'inline-block';
+  }
+}
+
+// 隱藏 Win Overlay，檢視雙方盤面
+function viewBoard(){
+  document.getElementById('winOv').classList.remove('on');
+  note('可自由瀏覽雙方最後的佈局，點擊左上角即可退出。', 'i', 4000);
+}
+
+function rematch(){
+  document.getElementById('winOv').classList.remove('on');
+  G.called=[];G.myMk=[];G.oppMk=[];G.myBingo=0;G.oppBingo=0;G.over=false;G.turn='p1';G.setup=[];
+  if(G.mode==='ai'){showS('sSetup');initSetup();}
+  else goHome();
+}
+
+// ═══════════ UTILS ═══════════
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=a[i];a[i]=a[j];a[j]=tmp;}
+  return a;
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(G.roomCode||'').then(function(){note('房間代碼已複製！','s');}).catch(function(){note('複製失敗','e');});
+}
+
+// Quick fill Q key
+document.addEventListener('keydown',function(e){
+  if((e.key==='q'||e.key==='Q')&&document.getElementById('sSetup').classList.contains('active')&&G.setup.length<25){
+    autoFillBoard();
+  }
+});
+</script>
+
+</body>
+</html>
